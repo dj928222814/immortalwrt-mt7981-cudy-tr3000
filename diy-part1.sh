@@ -25,7 +25,7 @@ if [ -d "$GITHUB_WORKSPACE/package/luci-compat-keep" ]; then
   cp -r "$GITHUB_WORKSPACE/package/luci-compat-keep" package/
 fi
 
-# 克隆经典 Argon 主题及配置插件
-git clone -b 18.06 https://github.com package/luci-theme-argon
-git clone -b 18.06 https://github.com package/luci-app-argon-config
+# 克隆适用于 ImmortalWrt 的经典 Argon 主题及配置插件
+git clone https://github.com/jerrykuku/luci-theme-argon.git
+
 
