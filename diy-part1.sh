@@ -17,8 +17,8 @@
 #echo 'src-git helloworld https://github.com/fw876/helloworld' >>feeds.conf.default
 #echo 'src-git passwall https://github.com/xiaorouji/openwrt-passwall' >>feeds.conf.default
 # 添加 QModem 软件源
-echo 'src-git qmodem https://github.com' >> feeds.conf.default
-echo 'src-git istore https://github.com' >> feeds.conf.default
+echo 'src-git qmodem https://github.com/FUjr/QModem.git;main' >> feeds.conf.default
+echo 'src-git istore https://github.com/linkease/istore;main' >> feeds.conf.default
 # Copy custom local packages into OpenWrt tree so they are available during build
 if [ -d "$GITHUB_WORKSPACE/package/luci-compat-keep" ]; then
   mkdir -p package
