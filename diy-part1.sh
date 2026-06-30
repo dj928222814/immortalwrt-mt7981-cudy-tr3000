@@ -25,7 +25,7 @@ if [ -d "$GITHUB_WORKSPACE/package/luci-compat-keep" ]; then
   cp -r "$GITHUB_WORKSPACE/package/luci-compat-keep" package/
 fi
 
-git clone https://github.com/eamonxg/luci-theme-aurora package/luci-theme-aurora
-git clone https://github.com/eamonxg/luci-app-aurora-config package/luci-app-aurora-config
-git clone https://github.com/timsaya/luci-app-bandix package/luci-app-bandix
-git clone https://github.com/timsaya/openwrt-bandix package/openwrt-bandix
+# 克隆经典 Argon 主题及配置插件
+git clone -b 18.06 https://github.com package/luci-theme-argon
+git clone -b 18.06 https://github.com package/luci-app-argon-config
+
