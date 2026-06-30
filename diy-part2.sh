@@ -31,3 +31,6 @@ sed -i -e '/^IMG_PREFIX:=/i BUILD_DATE := $(shell date +%Y%m%d)' \
 # 自动在配置文件中勾选 QModem 及其 Luci 界面
 echo "CONFIG_PACKAGE_luci-app-qmodem=y" >> .config
 echo "CONFIG_PACKAGE_qmodem=y" >> .config
+# 自动在配置文件中勾选 iStore 及其 Luci 界面
+echo "CONFIG_PACKAGE_luci-app-store=y" >> .config
+echo "CONFIG_PACKAGE_istore=y" >> .config
