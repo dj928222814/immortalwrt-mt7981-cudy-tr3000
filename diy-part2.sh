@@ -34,3 +34,9 @@ echo "CONFIG_PACKAGE_qmodem=y" >> .config
 # 自动在配置文件中勾选 iStore 及其 Luci 界面
 echo "CONFIG_PACKAGE_luci-app-store=y" >> .config
 echo "CONFIG_PACKAGE_istore=y" >> .config
+# 强制将默认主题修改为 luci-theme-argon
+sed -i 's/luci-theme-bootstrap/luci-theme-argon/g' feeds/luci/collections/luci/Makefile
+
+# 自动在配置文件中勾选 Argon 主题及其配置后台
+echo "CONFIG_PACKAGE_luci-theme-argon=y" >> .config
+echo "CONFIG_PACKAGE_luci-app-argon-config=y" >> .config
