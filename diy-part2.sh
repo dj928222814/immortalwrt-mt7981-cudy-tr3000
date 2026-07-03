@@ -5,9 +5,11 @@
 # Description: OpenWrt DIY script part 2 (After Update feeds)
 #
 
-# 1. 强行删除系统 Feeds 软件源里自带的旧版 Argon 主题，防止与你刚刚克隆的最新版源码发生冲突
+# 1. 彻底斩断系统自带旧版主题和缓存的残留，确保 100% 采用刚才克隆的新版 ucode 源码
 rm -rf feeds/luci/themes/luci-theme-argon
 rm -rf feeds/luci/applications/luci-app-argon-config
+rm -rf package/feeds/luci/luci-theme-argon
+rm -rf package/feeds/luci/luci-app-argon-config
 
 # 2. 临时解决 Rust 编译器的编译问题
 sed -i 's/ci-llvm=true/ci-llvm=false/g' feeds/packages/lang/rust/Makefile
