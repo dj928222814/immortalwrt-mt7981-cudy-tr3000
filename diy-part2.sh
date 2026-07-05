@@ -2,21 +2,48 @@
 # File name: diy-part2.sh
 # Description: OpenWrt DIY script part 2 (After Update feeds)
 
-# 1. 在输出的固件文件名中加入编译日期
+# =====================================================================
+# 1. 保留你原本的主题清理与强制替换逻辑
+# =====================================================================
+# 彻底斩断系统自带旧版主题和缓存的残留，确保 100% 采用刚才克隆的新版 ucode 源码
+rm -rf feeds/luci/themes/luci-theme-argon
+rm -rf feeds/luci/applications/luci-app-argon-config
+rm -rf package/feeds/luci/luci-theme-argon
+rm -rf package/feeds/luci/luci-app-argon-config
+
+# 强制将系统的默认主题修改为高颜值的 luci-theme-argon
+sed -i 's/luci-theme-bootstrap/luci-theme-argon/g' feeds/luci/collections/luci/Makefile
+
+
+# =====================================================================
+# 2. 保留你原本的基础修补逻辑
+# =====================================================================
+# 临时解决 Rust 编译器的编译问题
+sed -i 's/ci-llvm=true/ci-llvm=false/g' feeds/packages/lang/rust/Makefile
+
+# 在输出的固件文件名中自动加上编译日期
 sed -i -e '/^IMG_PREFIX:=/i BUILD_DATE := $(shell date +%Y%m%d)' \
        -e '/^IMG_PREFIX:=/ s/\($(SUBTARGET)\)/\1-$(BUILD_DATE)/' include/image.mk
 
-# 2. 解决 Rust 编译报错
-if [ -f "feeds/packages/lang/rust/Makefile" ]; then
-    echo "正在修复 Rust 编译配置..."
-    sed -i 's/ci-llvm=true/ci-llvm=false/g' feeds/packages/lang/rust/Makefile
+
+# =====================================================================
+# 3. 核心修正：自动寻找真正属于 Cudy TR3000 的官方配置，并注入插件
+# =====================================================================
+# 智能寻找 padavanonly 仓库里关于 tr3000 或 256m 的官方基础配置
+TR3000_CONFIG=$(ls defconfig/*tr3000*.config defconfig/*256m*.config 2>/dev/null | head -n 1)
+
+if [ -n "$TR3000_CONFIG" ] && [ -f "$TR3000_CONFIG" ]; then
+    echo "🎯 成功找到适配你机型的官方最新基础配置: $TR3000_CONFIG"
+    cp -f "$TR3000_CONFIG" .config
+else
+    echo "⚠️ 未在 defconfig 中找到 tr3000 专属配置，正在尝试从你本地仓库的 config/256m.config 恢复..."
+    if [ -f "$GITHUB_WORKSPACE/config/256m.config" ]; then
+        cp -f "$GITHUB_WORKSPACE/config/256m.config" .config
+    fi
 fi
 
-# 3. 【核心融合】同步 Quickstart 基础配置，并【直接编译嵌入】你的所有目标插件
-if [ -f "defconfig/mt7981-ax3000.config" ]; then
-    echo "🔄 正在加载 Quickstart 官方最新基础配置..."
-    cp -f defconfig/mt7981-ax3000.config .config
-    
+# 确保 .config 存在后，直接把你的核心插件硬编码（编译嵌入）进去
+if [ -f ".config" ]; then
     echo "🧱 正在向固件中直接硬编码（编译嵌入）你的所有插件及依赖..."
     cat << EOF >> .config
 # 核心依赖：确保旧版 Luci 兼容层直接编译进固件（iStore、QModem 必备）
@@ -43,7 +70,10 @@ CONFIG_PACKAGE_uqmi=y
 EOF
 fi
 
-# 4. 【核心扩容】精准对 256M 固件的分区表执行 250MB 顶格扩容
+
+# =====================================================================
+# 4. 核心扩容：精准对 256M 固件的分区表执行 250MB 顶格扩容
+# =====================================================================
 DTS_256M="target/linux/mediatek/dts/mt7981b-cudy-tr3000-v1-ubootmod.dts"
 
 if [ -f "$DTS_256M" ]; then
