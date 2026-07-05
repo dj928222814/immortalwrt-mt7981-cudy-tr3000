@@ -20,3 +20,5 @@ sed -i -e '/^IMG_PREFIX:=/i BUILD_DATE := $(shell date +%Y%m%d)' \
 
 # 4. 强制将系统的默认主题修改为高颜值的 luci-theme-argon
 sed -i 's/luci-theme-bootstrap/luci-theme-argon/g' feeds/luci/collections/luci/Makefile
+# 将 ubi 分区扩大到最大，吃满全部剩余 250.25M 空间 (十六进制为 0xfa40000)
+sed -i 's/reg = <0x5c0000 0x7000000>;/reg = <0x5c0000 0xfa40000>;/g' target/linux/mediatek/dts/mt7981b-cudy-tr3000-v1-ubootmod.dts
