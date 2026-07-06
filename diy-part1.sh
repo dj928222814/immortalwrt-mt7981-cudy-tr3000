@@ -19,10 +19,14 @@ git clone https://github.com/linkease/istore.git
 git clone https://github.com/jerrykuku/luci-theme-argon.git
 git clone https://github.com/jerrykuku/luci-app-argon-config.git
 
-# 5. 退出目录，将控制权交还给主编译器
+# 【新增】5. 拉取 luci-app-daed 源码到当前 custom 目录下
+# 此时由于你在 package/custom 目录中，直接克隆即可
+git clone https://github.com/QiuSimons/luci-app-daed
+
+# 6. 退出目录，将控制权交还给主编译器
 cd ../../
 
-# 6. 保留原脚本中本地包复制逻辑
+# 7. 保留原脚本中本地包复制逻辑
 if [ -d "$GITHUB_WORKSPACE/package/luci-compat-keep" ]; then
   mkdir -p package
   cp -r "$GITHUB_WORKSPACE/package/luci-compat-keep" package/
