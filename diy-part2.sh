@@ -3,13 +3,17 @@
 # Description: OpenWrt DIY script part 2 (After Update feeds)
 
 # =====================================================================
-# 1. 主题清理与强制替换逻辑
+# 1. 主题及插件清理与强制替换逻辑
 # =====================================================================
 # 彻底斩断系统自带旧版主题和缓存的残留，确保 100% 采用你克隆的新版 ucode 源码
 rm -rf feeds/luci/themes/luci-theme-argon
 rm -rf feeds/luci/applications/luci-app-argon-config
 rm -rf package/feeds/luci/luci-theme-argon
 rm -rf package/feeds/luci/luci-app-argon-config
+
+# 【强效清理】彻底清理 feeds 缓存中自带的旧版 daed，逼迫编译器必须使用你在 custom 目录克隆的最新源码
+rm -rf feeds/luci/applications/luci-app-daed
+rm -rf package/feeds/luci/luci-app-daed
 
 # 强制将系统的默认主题修改为高颜值的 luci-theme-argon
 sed -i 's/luci-theme-bootstrap/luci-theme-argon/g' feeds/luci/collections/luci/Makefile
@@ -71,5 +75,9 @@ CONFIG_KERNEL_BPF_EVENTS=y
 CONFIG_BPF_TOOLCHAIN_HOST=y
 CONFIG_KERNEL_XDP_SOCKETS=y
 CONFIG_PACKAGE_kmod-xdp-sockets-diag=y
+
+# 【补齐的核心流量分类组件】强行开启系统内核的 BPF 网络分流底座
+CONFIG_NET_CLS_BPF=y
+CONFIG_NET_ACT_BPF=y
 EOF
 fi
