@@ -59,8 +59,8 @@ CONFIG_PACKAGE_comgt=y
 CONFIG_PACKAGE_uqmi=y
 
 # 4. 直接编译嵌入：daed 网页 UI 菜单及语言包
-#CONFIG_PACKAGE_luci-app-daed=y
-#CONFIG_PACKAGE_luci-i18n-daed-zh-cn=y
+# CONFIG_PACKAGE_luci-app-daed=y
+# CONFIG_PACKAGE_luci-i18n-daed-zh-cn=y
 
 # =====================================================================
 # 4. DAE 运行前提：根据 截屏2026-07-07 01.10.12.jpg 强制注入 eBPF 和 BTF 内核配置
