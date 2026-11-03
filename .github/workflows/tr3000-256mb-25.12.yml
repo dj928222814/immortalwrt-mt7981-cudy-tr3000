@@ -129,7 +129,9 @@ jobs:
         run: |
           mkdir -p firmware
           cp -a openwrt/bin/targets/mediatek/filogic/. firmware/
-          cp source-revision.txt firmware/\n          cp openwrt/.config firmware/build.config\n          sed -n 's/^KERNEL_PATCHVER:=/Linux /p' openwrt/target/linux/mediatek/Makefile > firmware/kernel-version.txt
+          cp source-revision.txt firmware/
+          cp openwrt/.config firmware/build.config
+          sed -n 's/^KERNEL_PATCHVER:=/Linux /p' openwrt/target/linux/mediatek/Makefile > firmware/kernel-version.txt
           find firmware -maxdepth 1 -type f -printf '%f\n' | sort
 
       - name: Upload firmware
@@ -159,7 +161,9 @@ jobs:
         run: |
           mkdir -p firmware
           cp -a openwrt/bin/targets/mediatek/filogic/. firmware/
-          cp source-revision.txt firmware/\n          cp openwrt/.config firmware/build.config\n          sed -n 's/^KERNEL_PATCHVER:=/Linux /p' openwrt/target/linux/mediatek/Makefile > firmware/kernel-version.txt
+          cp source-revision.txt firmware/
+          cp openwrt/.config firmware/build.config
+          sed -n 's/^KERNEL_PATCHVER:=/Linux /p' openwrt/target/linux/mediatek/Makefile > firmware/kernel-version.txt
           find firmware -maxdepth 1 -type f -printf '%f\n' | sort
 
       - name: Upload firmware
