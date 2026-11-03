@@ -11,21 +11,19 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: tr3000-256mb-25-12-${{ github.ref }}
-  cancel-in-progress: false
-
 jobs:
   build:
     name: Build firmware
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     timeout-minutes: 360
     env:
       DEBIAN_FRONTEND: noninteractive
       SOURCE_REPO: https://github.com/immortalwrt/immortalwrt.git
       SOURCE_BRANCH: openwrt-25.12
+      CCACHE_DIR: /tmp/ccache
+      CCACHE_MAXSIZE: 3G
     steps:
-      - name: Check out workflow repository
+      - name: Check out workflow and existing profile
         uses: actions/checkout@v4
 
       - name: Install build dependencies
@@ -51,22 +49,67 @@ jobs:
           fi
           git -C openwrt log -1 --format='%H %s' | tee source-revision.txt
 
-      - name: Update and install feeds
+      - name: Add required package feed
+        working-directory: openwrt
+        run: |
+          if ! grep -q '^src-git istore ' feeds.conf.default; then
+            echo 'src-git istore https://github.com/linkease/istore;main' >> feeds.conf.default
+          fi
+
+      - name: Update feeds and install packages
         working-directory: openwrt
         run: |
           ./scripts/feeds update -a
           ./scripts/feeds install -a
+          ./scripts/feeds install -d y -p istore luci-app-store
 
-      - name: Configure Cudy TR3000 256MB v1
+      - name: Import packages retained from the existing 256M profile
+        env:
+          OPENWRT_DIR: ${{ github.workspace }}/openwrt
+        run: bash scripts/prepare-25.12.sh
+
+      - name: Cache compiler and download sources
+        uses: actions/cache@v4
+        with:
+          path: |
+            /tmp/ccache
+            openwrt/dl
+          key: ${{ runner.os }}-immortalwrt-25.12-tr3000-${{ hashFiles('config/256m.config') }}
+          restore-keys: |
+            ${{ runner.os }}-immortalwrt-25.12-tr3000-
+
+      - name: Configure ccache
+        run: |
+          ccache --set-config=max_size=$CCACHE_MAXSIZE
+          ccache --set-config=cache_dir=$CCACHE_DIR
+          ccache --set-config=compression=true
+
+      - name: Migrate the existing 256M configuration
         working-directory: openwrt
         run: |
-          cat > .config <<'EOF'
-          CONFIG_TARGET_mediatek=y
-          CONFIG_TARGET_mediatek_filogic=y
-          CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_cudy_tr3000-256mb-v1=y
-          EOF
+          cp "$GITHUB_WORKSPACE/config/256m.config" .config
+
+          # Upstream 25.12 renamed the 256MB device profile.
+          sed -i 's/cudy_tr3000-v1-256mb/cudy_tr3000-256mb-v1/g' .config
+
+          # These packages came from the old MTK-specific source fork and are
+          # not part of upstream ImmortalWrt. The upstream device provides its
+          # own supported Wi-Fi and acceleration packages.
+          sed -i -E '/^CONFIG_PACKAGE_(luci-app-eqos-mtk|luci-app-mtwifi-cfg|luci-app-turboacc-mtk|datconf|datconf-lua|mii_mgr|mtk-smp|mtkhqos_util|mtwifi-cfg|regs|switch|kmod-conninfra|kmod-mt_wifi|kmod-warp|wifi-dats)=y$/d' .config
+
           make defconfig
-          grep -E '^CONFIG_TARGET_(mediatek|DEVICE_mediatek_filogic_DEVICE_cudy_tr3000-256mb-v1)=' .config
+
+          grep -q '^CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_cudy_tr3000-256mb-v1=y$' .config
+          for package in luci-app-store luci-theme-argon luci-app-argon-config \
+                         luci-theme-aurora luci-app-aurora-config luci-app-bandix \
+                         bandix luci-app-qmodem qmodem; do
+            if ! grep -qx "CONFIG_PACKAGE_${package}=y" .config; then
+              echo "::error::Expected package was not resolved by make defconfig: ${package}"
+              exit 1
+            fi
+          done
+          echo "Migrated profile and selected packages:"
+          grep -E '^CONFIG_(TARGET_DEVICE_mediatek_filogic_DEVICE_cudy_tr3000-256mb-v1|PACKAGE_(luci-app-store|luci-theme-argon|luci-app-argon-config|luci-theme-aurora|luci-app-aurora-config|luci-app-bandix|bandix|luci-app-qmodem|qmodem))=y$' .config
 
       - name: Download sources
         working-directory: openwrt
@@ -75,7 +118,7 @@ jobs:
       - name: Compile firmware
         working-directory: openwrt
         run: |
-          if ! make -j"$(nproc)"; then
+          if ! make -j"$(nproc)" CC="ccache gcc" CXX="ccache g++"; then
             echo "Parallel build failed; retrying with one job for diagnostics."
             make -j1 V=s
           fi
