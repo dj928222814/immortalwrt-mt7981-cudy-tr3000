@@ -49,7 +49,7 @@ jobs:
           fi
           git -C openwrt log -1 --format='%H %s' | tee source-revision.txt
 
-      - name: Add required package feed
+      - name: Add iStore feed
         working-directory: openwrt
         run: |
           if ! grep -q '^src-git istore ' feeds.conf.default; then
@@ -68,7 +68,7 @@ jobs:
           OPENWRT_DIR: ${{ github.workspace }}/openwrt
         run: bash scripts/prepare-25.12.sh
 
-      - name: Cache compiler and download sources
+      - name: Cache compiler and downloaded sources
         uses: actions/cache@v4
         with:
           path: |
@@ -88,18 +88,14 @@ jobs:
         working-directory: openwrt
         run: |
           cp "$GITHUB_WORKSPACE/config/256m.config" .config
-
-          # Upstream 25.12 renamed the 256MB device profile.
           sed -i 's/cudy_tr3000-v1-256mb/cudy_tr3000-256mb-v1/g' .config
 
-          # These packages came from the old MTK-specific source fork and are
-          # not part of upstream ImmortalWrt. The upstream device provides its
-          # own supported Wi-Fi and acceleration packages.
+          # Remove packages that exist only in the old MTK-specific source fork.
           sed -i -E '/^CONFIG_PACKAGE_(luci-app-eqos-mtk|luci-app-mtwifi-cfg|luci-app-turboacc-mtk|datconf|datconf-lua|mii_mgr|mtk-smp|mtkhqos_util|mtwifi-cfg|regs|switch|kmod-conninfra|kmod-mt_wifi|kmod-warp|wifi-dats)=y$/d' .config
 
           make defconfig
-
           grep -q '^CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_cudy_tr3000-256mb-v1=y$' .config
+
           for package in luci-app-store luci-theme-argon luci-app-argon-config \
                          luci-theme-aurora luci-app-aurora-config luci-app-bandix \
                          bandix luci-app-openclash luci-app-qmodem \
@@ -109,40 +105,9 @@ jobs:
               exit 1
             fi
           done
-          echo "Migrated profile and selected packages:"
-          grep -E '^CONFIG_(TARGET_DEVICE_mediatek_filogic_DEVICE_cudy_tr3000-256mb-v1|PACKAGE_(luci-app-store|luci-theme-argon|luci-app-argon-config|luci-theme-aurora|luci-app-aurora-config|luci-app-bandix|bandix|luci-app-openclash|luci-app-qmodem|luci-app-qmodem-sms|qmodem|tom_modem))=y
 
-      - name: Download sources
-        working-directory: openwrt
-        run: make download -j"$(nproc)"
-
-      - name: Compile firmware
-        working-directory: openwrt
-        run: |
-          if ! make -j"$(nproc)" CC="ccache gcc" CXX="ccache g++"; then
-            echo "Parallel build failed; retrying with one job for diagnostics."
-            make -j1 V=s
-          fi
-
-      - name: Collect firmware and build metadata
-        if: success()
-        run: |
-          mkdir -p firmware
-          cp -a openwrt/bin/targets/mediatek/filogic/. firmware/
-          cp source-revision.txt firmware/
-          cp openwrt/.config firmware/build.config
-          sed -n 's/^KERNEL_PATCHVER:=/Linux /p' openwrt/target/linux/mediatek/Makefile > firmware/kernel-version.txt
-          find firmware -maxdepth 1 -type f -printf '%f\n' | sort
-
-      - name: Upload firmware
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: immortalwrt-25.12-cudy-tr3000-256mb
-          path: firmware/
-          if-no-files-found: error
-          retention-days: 14
- .config
+          echo "Migrated device and package selections:"
+          grep -E '^(CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_cudy_tr3000-256mb-v1=|CONFIG_PACKAGE_(luci-app-store|luci-theme-argon|luci-app-argon-config|luci-theme-aurora|luci-app-aurora-config|luci-app-bandix|bandix|luci-app-openclash|luci-app-qmodem|luci-app-qmodem-sms|qmodem|tom_modem)=)' .config
 
       - name: Download sources
         working-directory: openwrt
