@@ -6,7 +6,17 @@
 
 ---
 
-## immortalwrt 源码
+## ImmortalWrt 25.12（TR3000 256MB）
+
+仓库新增独立工作流：`.github/workflows/tr3000-256mb-25.12.yml`。在 GitHub Actions 中手动运行 **Build Cudy TR3000 256MB (ImmortalWrt 25.12)**，默认拉取 ImmortalWrt 的 `openwrt-25.12` 分支，也可以填写源码 commit 固定版本。固件通过 Actions artifact 提供，保留 14 天。
+
+该工作流从 `config/256m.config` 迁移配置，将旧设备 ID 改为上游 25.12 的 `cudy_tr3000-256mb-v1`，并导入仍可复用的 QModem、iStore、Argon、Aurora、Bandix 和本地 `luci-compat-keep` 包。旧 MTK 专有驱动及管理插件不属于上游 25.12，工作流会从迁移配置中移除，并使用上游设备支持的 Wi-Fi 驱动。
+
+原有 `ImmortalWrt Builder`、`Update Checker` 和 U-Boot 工作流均保留，仍按各自原配置运行；不会触发这个新工作流。新工作流只在 Actions 手动触发，因此不会和原工作流互相覆盖配置或抢同一个构建目录。
+
+---
+
+## 原有 MTK 6.6 源码工作流
 
 编译自 https://github.com/padavanonly/immortalwrt-mt798x-6.6 ，兼容 Cudy Tr3000 128M 新 flash
 
