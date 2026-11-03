@@ -1,0 +1,98 @@
+name: Build Cudy TR3000 256MB (ImmortalWrt 25.12)
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: "Optional ImmortalWrt commit SHA (defaults to latest openwrt-25.12)"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tr3000-256mb-25-12-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build firmware
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      DEBIAN_FRONTEND: noninteractive
+      SOURCE_REPO: https://github.com/immortalwrt/immortalwrt.git
+      SOURCE_BRANCH: openwrt-25.12
+    steps:
+      - name: Check out workflow repository
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            ack antlr3 asciidoc autoconf automake autopoint binutils bison \
+            build-essential bzip2 ccache clang cmake cpio curl device-tree-compiler \
+            ecj fastjar flex gawk gettext gcc-multilib g++-multilib git gnutls-dev \
+            gperf help2man intltool libelf-dev libglib2.0-dev libgmp3-dev libltdl-dev \
+            libmpc-dev libmpfr-dev libncurses-dev libpython3-dev libreadline-dev \
+            libssl-dev libtool libyaml-dev libz-dev lld llvm make mkisofs ninja-build \
+            patch pkgconf python3 python3-pip python3-ply python3-docutils \
+            python3-pyelftools qemu-utils re2c rsync scons squashfs-tools subversion \
+            swig texinfo unzip wget xmlto xxd zlib1g-dev zstd
+
+      - name: Fetch ImmortalWrt source
+        run: |
+          git clone --depth 1 --single-branch --branch "$SOURCE_BRANCH" "$SOURCE_REPO" openwrt
+          if [ -n "${{ inputs.commit }}" ]; then
+            git -C openwrt fetch --depth 1 origin "${{ inputs.commit }}"
+            git -C openwrt checkout --detach FETCH_HEAD
+          fi
+          git -C openwrt log -1 --format='%H %s' | tee source-revision.txt
+
+      - name: Update and install feeds
+        working-directory: openwrt
+        run: |
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+      - name: Configure Cudy TR3000 256MB v1
+        working-directory: openwrt
+        run: |
+          cat > .config <<'EOF'
+          CONFIG_TARGET_mediatek=y
+          CONFIG_TARGET_mediatek_filogic=y
+          CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_cudy_tr3000-256mb-v1=y
+          EOF
+          make defconfig
+          grep -E '^CONFIG_TARGET_(mediatek|DEVICE_mediatek_filogic_DEVICE_cudy_tr3000-256mb-v1)=' .config
+
+      - name: Download sources
+        working-directory: openwrt
+        run: make download -j"$(nproc)"
+
+      - name: Compile firmware
+        working-directory: openwrt
+        run: |
+          if ! make -j"$(nproc)"; then
+            echo "Parallel build failed; retrying with one job for diagnostics."
+            make -j1 V=s
+          fi
+
+      - name: Collect firmware and build metadata
+        if: success()
+        run: |
+          mkdir -p firmware
+          cp -a openwrt/bin/targets/mediatek/filogic/. firmware/
+          cp source-revision.txt firmware/
+          find firmware -maxdepth 1 -type f -printf '%f\n' | sort
+
+      - name: Upload firmware
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: immortalwrt-25.12-cudy-tr3000-256mb
+          path: firmware/
+          if-no-files-found: error
+          retention-days: 14
