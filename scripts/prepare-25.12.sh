@@ -11,8 +11,7 @@ mkdir -p "$PACKAGE_DIR" "$IMPORT_DIR"
 
 stage_package() {
   local source_dir="$1"
-  local package_name
-  package_name="$(basename "$source_dir")"
+  local package_name="${2:-$(basename "$source_dir")}"
   if [[ ! -f "$source_dir/Makefile" ]]; then
     echo "::error::Package Makefile not found: $source_dir"
     exit 1
@@ -43,7 +42,7 @@ for category in application luci; do
 done
 while IFS= read -r makefile; do
   stage_package "$(dirname "$makefile")"
-done < <(find "$IMPORT_DIR/qmodem/driver" -mindepth 2 -maxdepth 3 -type f -name Makefile -print)
+done < <(find "$IMPORT_DIR/qmodem/driver" -mindepth 2 -maxdepth 3 -type f -name Makefile ! -path '*/src/Makefile' -print)
 
 # Use the current Argon package and its bundled compatibility package. Remove
 # feed copies first so the build has only one provider for each package.
@@ -52,19 +51,19 @@ rm -rf "$OPENWRT_DIR/feeds/luci/themes/luci-theme-argon" \
        "$OPENWRT_DIR/feeds/luci/applications/luci-app-argon-config" \
        "$PACKAGE_DIR/feeds/luci/luci-theme-argon" \
        "$PACKAGE_DIR/feeds/luci/luci-app-argon-config"
-stage_package "$IMPORT_DIR/argon"
-stage_package "$IMPORT_DIR/argon/compat/luci-app-argon-config"
+stage_package "$IMPORT_DIR/argon" luci-theme-argon
+stage_package "$IMPORT_DIR/argon/compat/luci-app-argon-config" luci-app-argon-config
 
 # Preserve the Aurora theme and its LuCI settings app selected by the old profile.
 clone aurora-theme https://github.com/eamonxg/luci-theme-aurora.git master
 clone aurora-config https://github.com/eamonxg/luci-app-aurora-config.git master
-stage_package "$IMPORT_DIR/aurora-theme"
-stage_package "$IMPORT_DIR/aurora-config"
+stage_package "$IMPORT_DIR/aurora-theme" luci-theme-aurora
+stage_package "$IMPORT_DIR/aurora-config" luci-app-aurora-config
 
 # Bandix is split into a backend and LuCI frontend package.
 clone bandix-core https://github.com/timsaya/openwrt-bandix.git main
 clone bandix-luci https://github.com/timsaya/luci-app-bandix.git main
-stage_package "$IMPORT_DIR/bandix-core/openwrt-bandix"
-stage_package "$IMPORT_DIR/bandix-luci/luci-app-bandix"
+stage_package "$IMPORT_DIR/bandix-core/openwrt-bandix" bandix
+stage_package "$IMPORT_DIR/bandix-luci/luci-app-bandix" luci-app-bandix
 
 # iStore is maintained as an OpenWrt feed and is added by the workflow itself.
