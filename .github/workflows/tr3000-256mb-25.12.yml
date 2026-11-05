@@ -111,7 +111,50 @@ jobs:
             echo "::warning::make defconfig reported recursive dependency diagnostics from feed metadata; validating the generated selections."
           fi
 
-          grep -q '^CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_cudy_tr3000-256mb-v1=y$' .config
+          grep -E '^CONFIG_TARGET.*(mediatek|cudy)' .config || true
+          grep -q '^CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_cudy_tr3000-256mb-v1=y
+
+          for package in luci-app-store luci-app-qmodem luci-app-qmodem-sms qmodem tom_modem; do
+            if ! grep -qx "CONFIG_PACKAGE_${package}=y" .config; then
+              echo "::error::Required package was not resolved by make defconfig: ${package}"
+              exit 1
+            fi
+          done
+
+          echo "Resolved TR3000 256MB device and required iStore/QModem packages:"
+          grep -E '^(CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_cudy_tr3000-256mb-v1=|CONFIG_PACKAGE_(luci-app-store|luci-app-qmodem|luci-app-qmodem-sms|qmodem|tom_modem)=)' .config
+
+      - name: Download sources
+        working-directory: openwrt
+        run: make download -j"$(nproc)"
+
+      - name: Compile firmware
+        working-directory: openwrt
+        run: |
+          if ! make -j"$(nproc)" CC="ccache gcc" CXX="ccache g++"; then
+            echo "Parallel build failed; retrying with one job for diagnostics."
+            make -j1 V=s
+          fi
+
+      - name: Collect firmware and build metadata
+        if: success()
+        run: |
+          mkdir -p firmware
+          cp -a openwrt/bin/targets/mediatek/filogic/. firmware/
+          cp source-revision.txt firmware/
+          cp openwrt/.config firmware/build.config
+          sed -n 's/^KERNEL_PATCHVER:=/Linux /p' openwrt/target/linux/mediatek/Makefile > firmware/kernel-version.txt
+          find firmware -maxdepth 1 -type f -printf '%f\n' | sort
+
+      - name: Upload firmware
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: immortalwrt-25.12-cudy-tr3000-256mb
+          path: firmware/
+          if-no-files-found: error
+          retention-days: 14
+ .config
 
           for package in luci-app-store luci-app-qmodem luci-app-qmodem-sms qmodem tom_modem; do
             if ! grep -qx "CONFIG_PACKAGE_${package}=y" .config; then
