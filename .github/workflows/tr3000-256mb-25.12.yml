@@ -18,6 +18,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: tr3000-256mb-25.12
+  cancel-in-progress: true
+
 jobs:
   build:
     name: Build firmware
@@ -95,7 +99,9 @@ jobs:
         working-directory: openwrt
         run: |
           cp "$GITHUB_WORKSPACE/config/256m.config" .config
-          sed -i 's/cudy_tr3000-v1-256mb/cudy_tr3000-256mb-v1/g' .config
+          sed -i \
+            -e 's/^CONFIG_TARGET_mediatek_filogic_DEVICE_/CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_/' \
+            -e 's/cudy_tr3000-v1-256mb/cudy_tr3000-256mb-v1/g' .config
 
           # Remove packages that exist only in the old MTK-specific source fork.
           sed -i -E '/^CONFIG_PACKAGE_(luci-app-eqos-mtk|luci-app-mtwifi-cfg|luci-app-turboacc-mtk|datconf|datconf-lua|mii_mgr|mtk-smp|mtkhqos_util|mtwifi-cfg|regs|switch|kmod-conninfra|kmod-mt_wifi|kmod-warp|wifi-dats)=y$/d' .config
