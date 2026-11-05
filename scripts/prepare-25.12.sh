@@ -51,7 +51,10 @@ rm -rf "$OPENWRT_DIR/feeds/luci/themes/luci-theme-argon" \
        "$OPENWRT_DIR/feeds/luci/applications/luci-app-argon-config" \
        "$PACKAGE_DIR/feeds/luci/luci-theme-argon" \
        "$PACKAGE_DIR/feeds/luci/luci-app-argon-config"
-stage_package "$IMPORT_DIR/argon" luci-theme-argon
+mkdir -p "$IMPORT_DIR/argon-theme"
+cp -a "$IMPORT_DIR/argon/." "$IMPORT_DIR/argon-theme/"
+rm -rf "$IMPORT_DIR/argon-theme/.git" "$IMPORT_DIR/argon-theme/compat"
+stage_package "$IMPORT_DIR/argon-theme" luci-theme-argon
 stage_package "$IMPORT_DIR/argon/compat/luci-app-argon-config" luci-app-argon-config
 
 # Preserve the Aurora theme and its LuCI settings app selected by the old profile.
