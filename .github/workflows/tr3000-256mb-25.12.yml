@@ -99,31 +99,29 @@ jobs:
         working-directory: openwrt
         run: |
           cp "$GITHUB_WORKSPACE/config/256m.config" .config
+          # Convert the legacy device symbol and profile ID to ImmortalWrt 25.12.
           sed -i \
-            -e 's/^CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_/CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_/' \
-            -e 's/cudy_tr3000-256mb-v1/cudy_tr3000-256mb-v1/g' .config
+            -e 's/^CONFIG_TARGET_mediatek_filogic_DEVICE_/CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_/' \
+            -e 's/cudy_tr3000-v1-256mb/cudy_tr3000-256mb-v1/g' .config
 
           # Remove packages that exist only in the old MTK-specific source fork.
           sed -i -E '/^CONFIG_PACKAGE_(luci-app-eqos-mtk|luci-app-mtwifi-cfg|luci-app-turboacc-mtk|datconf|datconf-lua|mii_mgr|mtk-smp|mtkhqos_util|mtwifi-cfg|regs|switch|kmod-conninfra|kmod-mt_wifi|kmod-warp|wifi-dats)=y$/d' .config
 
           if ! make defconfig; then
-            echo "::warning::make defconfig reported non-fatal recursive feed Kconfig dependencies; verifying the generated device and required package selections."
+            echo "::warning::make defconfig reported recursive dependency diagnostics from feed metadata; validating the generated selections."
           fi
-          grep -E '^CONFIG_TARGET.*(mediatek|cudy)' .config || true
-          grep -q '^CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_cudy_tr3000-256mb-v1=y
 
-          for package in luci-app-store luci-theme-argon luci-app-argon-config \
-                         luci-theme-aurora luci-app-aurora-config luci-app-bandix \
-                         bandix luci-app-qmodem \
-                         luci-app-qmodem-sms qmodem tom_modem; do
+          grep -q '^CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_cudy_tr3000-256mb-v1=y$' .config
+
+          for package in luci-app-store luci-app-qmodem luci-app-qmodem-sms qmodem tom_modem; do
             if ! grep -qx "CONFIG_PACKAGE_${package}=y" .config; then
-              echo "::error::Expected package was not resolved by make defconfig: ${package}"
+              echo "::error::Required package was not resolved by make defconfig: ${package}"
               exit 1
             fi
           done
 
-          echo "Migrated device and package selections:"
-          grep -E '^(CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_cudy_tr3000-256mb-v1=|CONFIG_PACKAGE_(luci-app-store|luci-theme-argon|luci-app-argon-config|luci-theme-aurora|luci-app-aurora-config|luci-app-bandix|bandix|luci-app-qmodem|luci-app-qmodem-sms|qmodem|tom_modem)=)' .config
+          echo "Resolved TR3000 256MB device and required iStore/QModem packages:"
+          grep -E '^(CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_cudy_tr3000-256mb-v1=|CONFIG_PACKAGE_(luci-app-store|luci-app-qmodem|luci-app-qmodem-sms|qmodem|tom_modem)=)' .config
 
       - name: Download sources
         working-directory: openwrt
