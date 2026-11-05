@@ -100,8 +100,8 @@ jobs:
         run: |
           cp "$GITHUB_WORKSPACE/config/256m.config" .config
           sed -i \
-            -e 's/^CONFIG_TARGET_mediatek_filogic_DEVICE_/CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_/' \
-            -e 's/cudy_tr3000-v1-256mb/cudy_tr3000-256mb-v1/g' .config
+            -e 's/^CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_/CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_/' \
+            -e 's/cudy_tr3000-256mb-v1/cudy_tr3000-256mb-v1/g' .config
 
           # Remove packages that exist only in the old MTK-specific source fork.
           sed -i -E '/^CONFIG_PACKAGE_(luci-app-eqos-mtk|luci-app-mtwifi-cfg|luci-app-turboacc-mtk|datconf|datconf-lua|mii_mgr|mtk-smp|mtkhqos_util|mtwifi-cfg|regs|switch|kmod-conninfra|kmod-mt_wifi|kmod-warp|wifi-dats)=y$/d' .config
@@ -111,51 +111,6 @@ jobs:
           fi
           grep -E '^CONFIG_TARGET.*(mediatek|cudy)' .config || true
           grep -q '^CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_cudy_tr3000-256mb-v1=y
-
-          for package in luci-app-store luci-theme-argon luci-app-argon-config \
-                         luci-theme-aurora luci-app-aurora-config luci-app-bandix \
-                         bandix luci-app-qmodem \
-                         luci-app-qmodem-sms qmodem tom_modem; do
-            if ! grep -qx "CONFIG_PACKAGE_${package}=y" .config; then
-              echo "::error::Expected package was not resolved by make defconfig: ${package}"
-              exit 1
-            fi
-          done
-
-          echo "Migrated device and package selections:"
-          grep -E '^(CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_cudy_tr3000-256mb-v1=|CONFIG_PACKAGE_(luci-app-store|luci-theme-argon|luci-app-argon-config|luci-theme-aurora|luci-app-aurora-config|luci-app-bandix|bandix|luci-app-qmodem|luci-app-qmodem-sms|qmodem|tom_modem)=)' .config
-
-      - name: Download sources
-        working-directory: openwrt
-        run: make download -j"$(nproc)"
-
-      - name: Compile firmware
-        working-directory: openwrt
-        run: |
-          if ! make -j"$(nproc)" CC="ccache gcc" CXX="ccache g++"; then
-            echo "Parallel build failed; retrying with one job for diagnostics."
-            make -j1 V=s
-          fi
-
-      - name: Collect firmware and build metadata
-        if: success()
-        run: |
-          mkdir -p firmware
-          cp -a openwrt/bin/targets/mediatek/filogic/. firmware/
-          cp source-revision.txt firmware/
-          cp openwrt/.config firmware/build.config
-          sed -n 's/^KERNEL_PATCHVER:=/Linux /p' openwrt/target/linux/mediatek/Makefile > firmware/kernel-version.txt
-          find firmware -maxdepth 1 -type f -printf '%f\n' | sort
-
-      - name: Upload firmware
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: immortalwrt-25.12-cudy-tr3000-256mb
-          path: firmware/
-          if-no-files-found: error
-          retention-days: 14
- .config
 
           for package in luci-app-store luci-theme-argon luci-app-argon-config \
                          luci-theme-aurora luci-app-aurora-config luci-app-bandix \
