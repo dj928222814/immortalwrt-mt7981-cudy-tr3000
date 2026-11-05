@@ -95,12 +95,13 @@ jobs:
         working-directory: openwrt
         run: |
           cp "$GITHUB_WORKSPACE/config/256m.config" .config
+          sed -i 's/cudy_tr3000-v1-256mb/cudy_tr3000-256mb-v1/g' .config
 
           # Remove packages that exist only in the old MTK-specific source fork.
           sed -i -E '/^CONFIG_PACKAGE_(luci-app-eqos-mtk|luci-app-mtwifi-cfg|luci-app-turboacc-mtk|datconf|datconf-lua|mii_mgr|mtk-smp|mtkhqos_util|mtwifi-cfg|regs|switch|kmod-conninfra|kmod-mt_wifi|kmod-warp|wifi-dats)=y$/d' .config
 
           make defconfig
-          grep -q '^CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_cudy_tr3000-v1-256mb=y$' .config
+          grep -q '^CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_cudy_tr3000-256mb-v1=y$' .config
 
           for package in luci-app-store luci-theme-argon luci-app-argon-config \
                          luci-theme-aurora luci-app-aurora-config luci-app-bandix \
@@ -113,7 +114,7 @@ jobs:
           done
 
           echo "Migrated device and package selections:"
-          grep -E '^(CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_cudy_tr3000-v1-256mb=|CONFIG_PACKAGE_(luci-app-store|luci-theme-argon|luci-app-argon-config|luci-theme-aurora|luci-app-aurora-config|luci-app-bandix|bandix|luci-app-qmodem|luci-app-qmodem-sms|qmodem|tom_modem)=)' .config
+          grep -E '^(CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_cudy_tr3000-256mb-v1=|CONFIG_PACKAGE_(luci-app-store|luci-theme-argon|luci-app-argon-config|luci-theme-aurora|luci-app-aurora-config|luci-app-bandix|bandix|luci-app-qmodem|luci-app-qmodem-sms|qmodem|tom_modem)=)' .config
 
       - name: Download sources
         working-directory: openwrt
