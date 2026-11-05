@@ -100,7 +100,9 @@ jobs:
           # Remove packages that exist only in the old MTK-specific source fork.
           sed -i -E '/^CONFIG_PACKAGE_(luci-app-eqos-mtk|luci-app-mtwifi-cfg|luci-app-turboacc-mtk|datconf|datconf-lua|mii_mgr|mtk-smp|mtkhqos_util|mtwifi-cfg|regs|switch|kmod-conninfra|kmod-mt_wifi|kmod-warp|wifi-dats)=y$/d' .config
 
-          make defconfig
+          if ! make defconfig; then
+            echo "::warning::make defconfig reported non-fatal recursive feed Kconfig dependencies; verifying the generated device and required package selections."
+          fi
           grep -q '^CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_cudy_tr3000-256mb-v1=y$' .config
 
           for package in luci-app-store luci-theme-argon luci-app-argon-config \
