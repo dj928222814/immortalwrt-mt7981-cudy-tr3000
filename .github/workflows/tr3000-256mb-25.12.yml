@@ -112,7 +112,7 @@ jobs:
           fi
 
           grep -E '^CONFIG_TARGET.*(mediatek|cudy)' .config || true
-          grep -q '^CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_cudy_tr3000-256mb-v1=y
+          grep -q '^CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_cudy_tr3000-256mb-v1=y$' .config
 
           for package in luci-app-store luci-app-qmodem luci-app-qmodem-sms qmodem tom_modem; do
             if ! grep -qx "CONFIG_PACKAGE_${package}=y" .config; then
